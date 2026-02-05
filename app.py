@@ -6,7 +6,7 @@ from datetime import datetime
 # ---------------------------
 # CONFIG
 # ---------------------------
-SHEET_NAME = "NOME_DEL_TUO_GOOGLE_SHEET"
+SHEET_NAME = "FINALE - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2025-2026"
 WORKSHEET_NAME = "Sheet1"
 
 st.set_page_config(page_title="Presenze corso", layout="wide")
