@@ -59,7 +59,7 @@ with st.form("presenze_form"):
         default = row[today_col] if row[today_col] in ["x", "a"] else ""
 
         presenze[idx] = st.radio(
-            f"{row['Cognome']} {row['Nome']}",
+            f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
             options=["", "x", "a"],
             index=["", "x", "a"].index(default),
             horizontal=True,
