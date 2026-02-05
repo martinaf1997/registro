@@ -19,7 +19,7 @@ def connect_to_gsheet():
     gc = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"])
     sh = gc.open("FINALE - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2025-2026")
-    return sh.worksheet(Sheet1)
+    return sh.worksheet("Sheet1")
 
 ws = connect_to_gsheet()
 
