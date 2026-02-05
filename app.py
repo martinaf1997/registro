@@ -18,8 +18,8 @@ st.set_page_config(page_title="Presenze corso", layout="wide")
 def connect_to_gsheet():
     gc = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"])
-    sh = gc.open(SHEET_NAME)
-    return sh.worksheet(WORKSHEET_NAME)
+    sh = gc.open("FINALE - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2025-2026")
+    return sh.worksheet(Sheet1)
 
 ws = connect_to_gsheet()
 
