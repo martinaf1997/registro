@@ -32,7 +32,7 @@ df = pd.DataFrame(data)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-today_col = f"{datetime.today().day}/{datetime.today().month}"
+today_col = datetime.today().strftime("%d/%m")
 
 if today_col not in df.columns:
     st.error(f"La colonna per oggi ({today_col}) non esiste nel foglio.")
