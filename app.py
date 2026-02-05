@@ -45,6 +45,7 @@ teachers = sorted(df["Insegnanti"].dropna().unique())
 teacher = st.selectbox("Seleziona insegnante", teachers)
 
 df_teacher = df[df["Insegnanti"] == teacher].copy()
+df_teacher = df_teacher[df_teacher["Escluso"].str.lower() == "no"]
 
 st.markdown(f"### Presenze del {today_col}")
 
