@@ -42,6 +42,7 @@ ws = connect_to_gsheet()
 # ---------------------------
 data = ws.get_all_records()
 df = pd.DataFrame(data)
+df["_row"] = range(2, len(df) + 2)
 
 # ---------------------------
 # DATE COLUMN
@@ -70,8 +71,9 @@ st.markdown(f"### Presenze del {today_col}")
 with st.form("presenze_form"):
     presenze = {}
 
-    for idx, row in df_teacher.iterrows():
-        key = f"pres_{idx}"
+    for _, row in df_teacher.iterrows():
+        sheet_row = row["_row"]
+        key = f"pres_{sheet_row}"
 
         excel_value = str(row[today_col]).strip().lower()
         default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
@@ -96,10 +98,9 @@ if submitted:
     col_index = df.columns.get_loc(today_col) + 1  # +1 per Google Sheets
     updates = []
 
-    for idx, value in presenze.items():
-        row_number = idx + 2  # +2 per header + indice pandas
+    for sheet_row, value in presenze.items():
         updates.append({
-            "range": gspread.utils.rowcol_to_a1(row_number, col_index),
+            "range": gspread.utils.rowcol_to_a1(sheet_row, col_index),
             "values": [[value]]
         })
 
