@@ -86,7 +86,7 @@ with st.form("presenze_form"):
             key=key
         )
 
-        presenze[idx] = PILL_TO_EXCEL[selected]
+        presenze[sheet_row] = PILL_TO_EXCEL[selected]
 
     submitted = st.form_submit_button("💾 Salva presenze")
 
