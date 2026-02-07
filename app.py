@@ -62,8 +62,8 @@ with st.form("presenze_form"):
 
         presenze[idx] = st.radio(
             f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
-            options=["Assente", "Assente giustificato", "Presente"],
-            index=["", "a", "x"].index(default),
+            options=["", "a", "x"],
+            index=["Assente", "Assente giustificato", "Presente"].index(default),
             horizontal=True,
             key=key
         )
