@@ -11,6 +11,20 @@ WORKSHEET_NAME = "ISCRIZIONI"
 
 st.set_page_config(page_title="Presenze corso", layout="wide")
 
+# UI -> Excel
+PILL_TO_EXCEL = {
+    "Assente": "",
+    "Assente giustificato": "a",
+    "Presente": "x",
+}
+
+# Excel -> UI
+EXCEL_TO_PILL = {
+    "": "Assente",
+    "a": "Assente giustificato",
+    "x": "Presente",
+}
+
 # ---------------------------
 # GOOGLE SHEETS CONNECTION
 # ---------------------------
@@ -58,18 +72,23 @@ with st.form("presenze_form"):
 
     for idx, row in df_teacher.iterrows():
         key = f"pres_{idx}"
-        default = row[today_col] if row[today_col] in ["x", "a"] else ""
 
-        presenze[idx] = st.radio(
+        excel_value = str(row[today_col]).strip().lower()
+        default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
+
+        selected = st.pills(
             f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
-            options=["", "a", "x"],
-            index=["", "a", "x"].index(default),
-            horizontal=True,
+            options=["Assente", "Assente giustificato", "Presente"],
+            selection_mode="single",
+            default=default_pill,
             key=key
         )
 
+        presenze[idx] = PILL_TO_EXCEL[selected]
+
     submitted = st.form_submit_button("💾 Salva presenze")
 
+    
 # ---------------------------
 # WRITE BACK
 # ---------------------------
