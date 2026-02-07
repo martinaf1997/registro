@@ -32,10 +32,11 @@ df = pd.DataFrame(data)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-today_col = datetime.today().strftime("%d/%m")
+#today_col = datetime.today().strftime("%d/%m")
+today_col = "09/02"
 
 if today_col not in df.columns:
-    st.error(f"La colonna per oggi ({today_col}) non esiste nel foglio.")
+    st.error(f"Oggi non c'è lezione!")
     st.stop()
 
 # ---------------------------
@@ -61,8 +62,8 @@ with st.form("presenze_form"):
 
         presenze[idx] = st.radio(
             f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
-            options=["", "x", "a"],
-            index=["", "x", "a"].index(default),
+            options=["Assente", "Assente giustificato", "Presente"],
+            index=["", "a", "x"].index(default),
             horizontal=True,
             key=key
         )
