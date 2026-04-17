@@ -85,6 +85,7 @@ else:
 # ---------------------------
 # FORM
 # ---------------------------
+submitted = False
 if lezione_oggi:
 
     with st.form("presenze_form"):
