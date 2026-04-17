@@ -2,6 +2,11 @@ import streamlit as st
 import gspread
 import pandas as pd
 from datetime import datetime
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from io import BytesIO
+import re
 
 # ---------------------------
 # CONFIG
@@ -97,6 +102,87 @@ with st.form("presenze_form"):
 
     submitted = st.form_submit_button("💾 Salva presenze")
 
+st.markdown("---")
+st.subheader("Registro cartaceo")
+
+if st.button("🖨️ Stampa registro"):
+    # ---------------------------
+    # IDENTIFICA COLONNE DATA
+    # ---------------------------
+    date_pattern = re.compile(r"\d{2}/\d{2}")
+    date_cols = [col for col in df.columns if date_pattern.fullmatch(col)]
+    
+    # Ordina le date (importante!)
+    date_cols_sorted = sorted(date_cols, key=lambda x: datetime.strptime(x, "%d/%m"))
+    
+    # ---------------------------
+    # TROVA ULTIMA DATA COMPILATA
+    # ---------------------------
+    last_filled_index = 0
+    
+    for i, col in enumerate(date_cols_sorted):
+        if df_teacher[col].astype(str).str.strip().replace("nan", "").any():
+            last_filled_index = i
+    
+    # Prendi da ultima compilata fino alla fine
+    selected_dates = date_cols_sorted[last_filled_index:]
+    
+    # ---------------------------
+    # COSTRUZIONE TABELLA
+    # ---------------------------
+    header = ["N°", "Cognome", "Nome"] + selected_dates
+    
+    table_data = [header]
+    
+    for _, row in df_teacher.iterrows():
+        row_data = [
+            row["Numero di iscrizione"],
+            row["Cognome"],
+            row["Nome"],
+        ] + [""] * len(selected_dates)
+    
+        table_data.append(row_data)
+    
+    # ---------------------------
+    # CREA PDF
+    # ---------------------------
+    buffer = BytesIO()
+    
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=20,
+        leftMargin=20,
+        topMargin=20,
+        bottomMargin=20
+    )
+    
+    table = Table(table_data, repeatRows=1)
+    
+    style = TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+    ])
+    
+    table.setStyle(style)
+    
+    elements = [table]
+    doc.build(elements)
+    
+    buffer.seek(0)
+    
+    # ---------------------------
+    # DOWNLOAD
+    # ---------------------------
+    st.download_button(
+        label="📥 Scarica PDF registro",
+        data=buffer,
+        file_name=f"registro_{teacher}.pdf",
+        mime="application/pdf"
+    )
     
 # ---------------------------
 # WRITE BACK
