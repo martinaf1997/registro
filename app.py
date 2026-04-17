@@ -158,13 +158,13 @@ if st.button("🖨️ Stampa registro"):
             Paragraph(str(row["Nome"]), styleN),]
         
         for i, col in enumerate(selected_dates):
-        if i == 0:
-            # Prima colonna = ultima lezione compilata → mostra dati reali
-            value = str(row[col]).strip().lower()
-            row_data.append(value)
-        else:
-            # Future → vuote
-            row_data.append("")
+            if i == 0:
+                # Prima colonna = ultima lezione compilata → mostra dati reali
+                value = str(row[col]).strip().lower()
+                row_data.append(value)
+            else:
+                # Future → vuote
+                row_data.append("")
     
         table_data.append(row_data)
     
