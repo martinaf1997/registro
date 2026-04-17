@@ -7,6 +7,8 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from io import BytesIO
 import re
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 
 # ---------------------------
 # CONFIG
@@ -110,9 +112,14 @@ st.markdown("---")
 st.subheader("Registro cartaceo")
 
 if st.button("🖨️ Stampa registro"):
+
+    styles = getSampleStyleSheet()
+    styleN = styles["Normal"]
+    
     # ---------------------------
     # IDENTIFICA COLONNE DATA
     # ---------------------------
+    
     date_pattern = re.compile(r"\d{2}/\d{2}")
     date_cols = [col for col in df.columns if date_pattern.fullmatch(col)]
     
@@ -141,10 +148,10 @@ if st.button("🖨️ Stampa registro"):
     
     for _, row in df_teacher.iterrows():
         row_data = [
-            row["Numero di iscrizione"],
-            row["Cognome"],
-            row["Nome"],
-        ] + [""] * len(selected_dates)
+            Paragraph(str(row["Numero di iscrizione"]), styleN),
+            Paragraph(str(row["Cognome"]), styleN),
+            Paragraph(str(row["Nome"]), styleN),
+            ] + [""] * len(selected_dates)
     
         table_data.append(row_data)
     
@@ -162,7 +169,8 @@ if st.button("🖨️ Stampa registro"):
         bottomMargin=10
     )
     
-    table = Table(table_data, repeatRows=1)
+    col_widths = [40, 100, 100] + [40] * len(selected_dates)
+    table = Table(table_data, colWidths=col_widths, repeatRows=1)
     
     style = TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
