@@ -54,12 +54,12 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-#today_col = datetime.today().strftime("%d/%m")
-today_col = "16/04"
+today_col = datetime.today().strftime("%d/%m")
+#today_col = "16/04"
 
-if today_col not in df.columns:
-    st.error(f"Oggi non c'è lezione!")
-    st.stop()
+lezione_oggi = today_col in df.columns
+if not lezione_oggi:
+    st.warning("⚠️ Oggi non c'è lezione: puoi solo stampare il registro")
 
 # ---------------------------
 # TEACHER SELECTION
@@ -77,7 +77,10 @@ df_teacher["_num"] = pd.to_numeric(
 
 df_teacher = df_teacher.sort_values("_num")
 
-st.markdown(f"### Presenze del {today_col}")
+if lezione_oggi:
+    st.markdown(f"### Presenze del {today_col}")
+else:
+    st.markdown("### Presenze non disponibili oggi")
 
 # ---------------------------
 # FORM
@@ -102,7 +105,7 @@ with st.form("presenze_form"):
 
         presenze[sheet_row] = PILL_TO_EXCEL[selected]
 
-    submitted = st.form_submit_button("💾 Salva presenze")
+    submitted = st.form_submit_button("💾 Salva presenze",disabled=not lezione_oggi)
 
 # ---------------------------
 # REGISTRO CARTACEO    
@@ -152,8 +155,16 @@ if st.button("🖨️ Stampa registro"):
         row_data = [
             Paragraph(str(row["Numero di iscrizione"]), styleN),
             Paragraph(str(row["Cognome"]), styleN),
-            Paragraph(str(row["Nome"]), styleN),
-            ] + [""] * len(selected_dates)
+            Paragraph(str(row["Nome"]), styleN),]
+        
+        for i, col in enumerate(selected_dates):
+        if i == 0:
+            # Prima colonna = ultima lezione compilata → mostra dati reali
+            value = str(row[col]).strip().lower()
+            row_data.append(value)
+        else:
+            # Future → vuote
+            row_data.append("")
     
         table_data.append(row_data)
     
@@ -202,7 +213,7 @@ if st.button("🖨️ Stampa registro"):
 # ---------------------------
 # WRITE BACK
 # ---------------------------
-if submitted:
+if submitted and lezione_oggi:
     col_index = df.columns.get_loc(today_col) + 1  # +1 per Google Sheets
     updates = []
 
