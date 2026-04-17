@@ -102,6 +102,10 @@ with st.form("presenze_form"):
 
     submitted = st.form_submit_button("💾 Salva presenze")
 
+# ---------------------------
+# REGISTRO CARTACEO    
+# ---------------------------
+
 st.markdown("---")
 st.subheader("Registro cartaceo")
 
@@ -124,8 +128,9 @@ if st.button("🖨️ Stampa registro"):
         if df_teacher[col].astype(str).str.strip().replace("nan", "").any():
             last_filled_index = i
     
-    # Prendi da ultima compilata fino alla fine
-    selected_dates = date_cols_sorted[last_filled_index:]
+    # Selezione numero giorni
+    n_gg = 10
+    selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
     
     # ---------------------------
     # COSTRUZIONE TABELLA
