@@ -141,6 +141,7 @@ if st.button("🖨️ Stampa registro"):
     startsearch = today_col
     while daynotfound:
         try: 
+            st.write(startsearch)
             last_filled_index = date_cols_sorted.index(startsearch)
             daynotfound = False
         except: startsearch =- 1
