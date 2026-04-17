@@ -160,7 +160,7 @@ if st.button("🖨️ Stampa registro"):
             Paragraph(str(row["Cognome"]), styleN),
             Paragraph(str(row["Nome"]), styleN),
         ]
-        
+        st.write("Date selezionate:", selected_dates)
         for i, col in enumerate(selected_dates):
             if i == 0:
                 # Prima colonna = ultima lezione compilata → mostra dati reali
@@ -168,7 +168,7 @@ if st.button("🖨️ Stampa registro"):
                 row_data.append(value)
             else:
                 # Future → vuote
-                row_data.append([""] * len(selected_dates))
+                row_data.append([""])
     
         table_data.append(row_data)
     
