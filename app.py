@@ -148,7 +148,8 @@ if st.button("🖨️ Stampa registro"):
     
     # Selezione numero giorni
     n_gg = 15
-    selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
+    try: selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
+    except: selected_dates = date_cols_sorted[last_filled_index:]
     
     # ---------------------------
     # COSTRUZIONE TABELLA
@@ -185,9 +186,19 @@ if st.button("🖨️ Stampa registro"):
         pagesize=landscape(A4),
         rightMargin=10,
         leftMargin=10,
-        topMargin=10,
+        topMargin=20,
         bottomMargin=10
     )
+
+    def header(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica-Bold", 9)
+        # Nome insegnante in alto a sinistra
+        canvas.drawString(10, landscape(A4)[1] - 20, f"Insegnante: {teacher}")
+        # Data di stampa in alto a destra
+        data_stampa = datetime.today().strftime("%d/%m/%Y")
+        canvas.drawRightString(landscape(A4)[0] - 10, landscape(A4)[1] - 20, f"Stampato il: {data_stampa}")
+        canvas.restoreState()
     
     col_widths = [40, 95, 95] + [25] * len(selected_dates)
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
@@ -203,7 +214,7 @@ if st.button("🖨️ Stampa registro"):
     table.setStyle(style)
     
     elements = [table]
-    doc.build(elements)
+    doc.build(elements, onFirstPage=header, onLaterPages=header)
     
     buffer.seek(0)
     
