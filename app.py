@@ -54,8 +54,8 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-#today_col = datetime.today().strftime("%d/%m")
-today_col = "16/04"
+today_col = datetime.today().strftime("%d/%m")
+#today_col = "16/04"
 
 lezione_oggi = today_col in df.columns
 if not lezione_oggi:
@@ -146,6 +146,7 @@ if st.button("🖨️ Stampa registro"):
     # Selezione numero giorni
     n_gg = 15
     selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
+    st.write("Date selezionate:", selected_dates)
     
     # ---------------------------
     # COSTRUZIONE TABELLA
