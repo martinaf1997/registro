@@ -133,7 +133,18 @@ if st.button("🖨️ Stampa registro"):
     
     # Ordina le date (importante!)
     date_cols_sorted = sorted(date_cols, key=lambda x: datetime.strptime(x, "%d/%m"))
-    last_filled_index = date_cols_sorted.index(today_col)
+    
+    today_dt = datetime.strptime(today_col, "%d/%m")
+    
+    # Se today_col non esiste nel foglio, cerca l'ultima data di lezione ≤ oggi
+    if today_col in date_cols_sorted:
+        last_filled_index = date_cols_sorted.index(today_col)
+    else:
+        past_dates = [d for d in date_cols_sorted if datetime.strptime(d, "%d/%m") <= today_dt]
+        if not past_dates:
+            st.warning("Nessuna data di lezione trovata nel registro.")
+            st.stop()
+        last_filled_index = date_cols_sorted.index(past_dates[-1])
     
     # Selezione numero giorni
     n_gg = 15
