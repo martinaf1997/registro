@@ -105,7 +105,7 @@ with st.form("presenze_form"):
 
         presenze[sheet_row] = PILL_TO_EXCEL[selected]
 
-    submitted = st.form_submit_button("💾 Salva presenze",disabled=not lezione_oggi)
+    submitted = st.form_submit_button("💾 Salva presenze",disabled= not lezione_oggi)
 
 # ---------------------------
 # REGISTRO CARTACEO    
@@ -155,7 +155,8 @@ if st.button("🖨️ Stampa registro"):
         row_data = [
             Paragraph(str(row["Numero di iscrizione"]), styleN),
             Paragraph(str(row["Cognome"]), styleN),
-            Paragraph(str(row["Nome"]), styleN),]
+            Paragraph(str(row["Nome"]), styleN),
+        ]
         
         for i, col in enumerate(selected_dates):
             if i == 0:
