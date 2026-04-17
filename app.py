@@ -137,11 +137,17 @@ if st.button("🖨️ Stampa registro"):
     # ---------------------------
     # TROVA ULTIMA DATA COMPILATA
     # ---------------------------
-    last_filled_index = 0
-    
+    daynotfound = True
+    startsearch = today_col
+    while daynotfound:
+        try: 
+            last_filled_index = date_cols_sorted.index(startsearch)
+            daynotfound = False
+        except: startsearch =- 1
+    '''
     for i, col in enumerate(date_cols_sorted):
         if df_teacher[col].astype(str).str.strip().replace("nan", "").any():
-            last_filled_index = i
+            last_filled_index = i'''
     
     # Selezione numero giorni
     n_gg = 15
