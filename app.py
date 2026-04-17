@@ -115,6 +115,8 @@ if st.button("🖨️ Stampa registro"):
 
     styles = getSampleStyleSheet()
     styleN = styles["Normal"]
+    styleN.fontSize = 6
+    styleN.leading = 7
     
     # ---------------------------
     # IDENTIFICA COLONNE DATA
