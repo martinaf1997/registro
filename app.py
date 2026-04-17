@@ -54,8 +54,8 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-today_col = datetime.today().strftime("%d/%m")
-#today_col = "16/04"
+#today_col = datetime.today().strftime("%d/%m")
+today_col = "16/04"
 
 lezione_oggi = today_col in df.columns
 if not lezione_oggi:
@@ -160,7 +160,7 @@ if st.button("🖨️ Stampa registro"):
             Paragraph(str(row["Cognome"]), styleN),
             Paragraph(str(row["Nome"]), styleN),
         ]
-        st.write("Date selezionate:", selected_dates)
+        
         for i, col in enumerate(selected_dates):
             if i == 0:
                 # Prima colonna = ultima lezione compilata → mostra dati reali
