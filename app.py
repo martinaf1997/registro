@@ -129,7 +129,7 @@ if st.button("🖨️ Stampa registro"):
             last_filled_index = i
     
     # Selezione numero giorni
-    n_gg = 10
+    n_gg = 20
     selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
     
     # ---------------------------
@@ -156,17 +156,17 @@ if st.button("🖨️ Stampa registro"):
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
-        rightMargin=20,
-        leftMargin=20,
-        topMargin=20,
-        bottomMargin=20
+        rightMargin=10,
+        leftMargin=10,
+        topMargin=10,
+        bottomMargin=10
     )
     
     table = Table(table_data, repeatRows=1)
     
     style = TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.yellow),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("FONTSIZE", (0, 0), (-1, -1), 8),
