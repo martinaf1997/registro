@@ -186,15 +186,15 @@ if st.button("🖨️ Stampa registro"):
         pagesize=landscape(A4),
         rightMargin=10,
         leftMargin=10,
-        topMargin=20,
+        topMargin=25,
         bottomMargin=10
     )
 
     def header(canvas, doc):
         canvas.saveState()
-        canvas.setFont("Helvetica-Bold", 9)
+        canvas.setFont("Helvetica-Bold", 8)
         # Nome insegnante in alto a sinistra
-        canvas.drawString(10, landscape(A4)[1] - 20, f"Insegnante: {teacher}")
+        canvas.drawString(10, landscape(A4)[1] - 20, f"Classe: {teacher}")
         # Data di stampa in alto a destra
         data_stampa = datetime.today().strftime("%d/%m/%Y")
         canvas.drawRightString(landscape(A4)[0] - 10, landscape(A4)[1] - 20, f"Stampato il: {data_stampa}")
