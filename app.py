@@ -168,7 +168,7 @@ if st.button("🖨️ Stampa registro"):
                 row_data.append(value)
             else:
                 # Future → vuote
-                row_data.append("")
+                row_data.append([""] * len(selected_dates))
     
         table_data.append(row_data)
     
