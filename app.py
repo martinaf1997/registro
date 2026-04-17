@@ -54,8 +54,8 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-#today_col = datetime.today().strftime("%d/%m")
-today_col = "16/04"
+today_col = datetime.today().strftime("%d/%m")
+#today_col = "16/04"
 
 lezione_oggi = today_col in df.columns
 if not lezione_oggi:
