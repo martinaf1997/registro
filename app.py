@@ -52,8 +52,8 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-today_col = datetime.today().strftime("%d/%m")
-#today_col = "12/02"
+#today_col = datetime.today().strftime("%d/%m")
+today_col = "16/04"
 
 if today_col not in df.columns:
     st.error(f"Oggi non c'è lezione!")
