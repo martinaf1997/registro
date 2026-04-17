@@ -54,8 +54,8 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 # DATE COLUMN
 # ---------------------------
-today_col = datetime.today().strftime("%d/%m")
-#today_col = "16/04"
+#today_col = datetime.today().strftime("%d/%m")
+today_col = "16/04"
 
 lezione_oggi = today_col in df.columns
 if not lezione_oggi:
@@ -133,22 +133,7 @@ if st.button("🖨️ Stampa registro"):
     
     # Ordina le date (importante!)
     date_cols_sorted = sorted(date_cols, key=lambda x: datetime.strptime(x, "%d/%m"))
-    
-    # ---------------------------
-    # TROVA ULTIMA DATA COMPILATA
-    # ---------------------------
-    daynotfound = True
-    startsearch = today_col
-    while daynotfound:
-        try: 
-            st.write(startsearch)
-            last_filled_index = date_cols_sorted.index(startsearch)
-            daynotfound = False
-        except: startsearch =- 1
-    '''
-    for i, col in enumerate(date_cols_sorted):
-        if df_teacher[col].astype(str).str.strip().replace("nan", "").any():
-            last_filled_index = i'''
+    last_filled_index = date_cols_sorted.index(today_col)
     
     # Selezione numero giorni
     n_gg = 15
