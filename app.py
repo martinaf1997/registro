@@ -138,7 +138,6 @@ if st.button("🖨️ Stampa registro"):
     # Selezione numero giorni
     n_gg = 15
     selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
-    st.write("Date selezionate:", selected_dates)
     
     # ---------------------------
     # COSTRUZIONE TABELLA
