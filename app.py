@@ -169,7 +169,7 @@ if st.button("🖨️ Stampa registro"):
         bottomMargin=10
     )
     
-    col_widths = [40, 100, 100] + [40] * len(selected_dates)
+    col_widths = [20, 100, 100] + [20] * len(selected_dates)
     table = Table(table_data, colWidths=col_widths, repeatRows=1)
     
     style = TableStyle([
@@ -177,7 +177,7 @@ if st.button("🖨️ Stampa registro"):
         ("BACKGROUND", (0, 0), (-1, 0), colors.yellow),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("FONTSIZE", (0, 0), (-1, -1), 5),
     ])
     
     table.setStyle(style)
