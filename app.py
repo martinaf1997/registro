@@ -85,27 +85,29 @@ else:
 # ---------------------------
 # FORM
 # ---------------------------
-with st.form("presenze_form"):
-    presenze = {}
+if lezione_oggi:
 
-    for _, row in df_teacher.iterrows():
-        sheet_row = row["_row"]
-        key = f"pres_{sheet_row}"
-
-        excel_value = str(row[today_col]).strip().lower()
-        default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
-
-        selected = st.pills(
-            f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
-            options=["Assente", "Assente giustificato", "Presente"],
-            selection_mode="single",
-            default=default_pill,
-            key=key
-        )
-
-        presenze[sheet_row] = PILL_TO_EXCEL[selected]
-
-    submitted = st.form_submit_button("💾 Salva presenze",disabled= not lezione_oggi)
+    with st.form("presenze_form"):
+        presenze = {}
+    
+        for _, row in df_teacher.iterrows():
+            sheet_row = row["_row"]
+            key = f"pres_{sheet_row}"
+    
+            excel_value = str(row[today_col]).strip().lower()
+            default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
+    
+            selected = st.pills(
+                f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
+                options=["Assente", "Assente giustificato", "Presente"],
+                selection_mode="single",
+                default=default_pill,
+                key=key
+            )
+    
+            presenze[sheet_row] = PILL_TO_EXCEL[selected]
+    
+        submitted = st.form_submit_button("💾 Salva presenze")
 
 # ---------------------------
 # REGISTRO CARTACEO    
