@@ -136,7 +136,7 @@ if st.button("🖨️ Stampa registro"):
             last_filled_index = i
     
     # Selezione numero giorni
-    n_gg = 20
+    n_gg = 15
     selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
     
     # ---------------------------
@@ -177,7 +177,7 @@ if st.button("🖨️ Stampa registro"):
         ("BACKGROUND", (0, 0), (-1, 0), colors.yellow),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
     ])
     
     table.setStyle(style)
