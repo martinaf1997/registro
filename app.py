@@ -1,7 +1,7 @@
 import streamlit as st
 import gspread
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
