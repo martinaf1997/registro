@@ -13,7 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 # ---------------------------
 # CONFIG
 # ---------------------------
-SHEET_NAME = "FINALE - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2025-2026"
+SHEET_NAME = "Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027"
 WORKSHEET_NAME = "ISCRIZIONI"
 
 st.set_page_config(page_title="Presenze corso", layout="wide")
@@ -39,7 +39,7 @@ EXCEL_TO_PILL = {
 def connect_to_gsheet():
     gc = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"])
-    sh = gc.open("FINALE - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2025-2026")
+    sh = gc.open("Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027")
     return sh.worksheet("ISCRIZIONI")
 
 ws = connect_to_gsheet()
@@ -55,10 +55,13 @@ df["_row"] = range(2, len(df) + 2)
 # DATE COLUMN
 # ---------------------------
 today_col = datetime.today().strftime("%d/%m")
-#today_col = "16/04"
+yest_col = (datetime.today() - timedelta(days=1)).strftime("%d/%m")
 
 lezione_oggi = today_col in df.columns
-if not lezione_oggi:
+lezione_ieri = yest_col in df.columns
+
+
+if not (lezione_oggi or lezione_ieri):
     st.warning("⚠️ Oggi non c'è lezione: puoi solo stampare il registro")
 
 # ---------------------------
@@ -79,6 +82,8 @@ df_teacher = df_teacher.sort_values("_num")
 
 if lezione_oggi:
     st.markdown(f"### Presenze del {today_col}")
+elif lezione_ieri:
+    st.markdown(f"### Presenze del {yest_col}")
 else:
     st.markdown("### Presenze non disponibili oggi")
 
@@ -96,6 +101,30 @@ if lezione_oggi:
             key = f"pres_{sheet_row}"
     
             excel_value = str(row[today_col]).strip().lower()
+            default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
+    
+            selected = st.pills(
+                f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
+                options=["Assente", "Assente giustificato", "Presente"],
+                selection_mode="single",
+                default=default_pill,
+                key=key
+            )
+    
+            presenze[sheet_row] = PILL_TO_EXCEL[selected]
+    
+        submitted = st.form_submit_button("💾 Salva presenze")
+
+elif lezione_ieri:
+
+    with st.form("presenze_form"):
+        presenze = {}
+    
+        for _, row in df_teacher.iterrows():
+            sheet_row = row["_row"]
+            key = f"pres_{sheet_row}"
+    
+            excel_value = str(row[yest_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
     
             selected = st.pills(
