@@ -13,7 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 # ---------------------------
 # CONFIG
 # ---------------------------
-SHEET_NAME = "Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027"
+SHEET_NAME = "Finale - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027"
 WORKSHEET_NAME = "ISCRIZIONI"
 
 st.set_page_config(page_title="Presenze corso", layout="wide")
@@ -39,7 +39,7 @@ EXCEL_TO_PILL = {
 def connect_to_gsheet():
     gc = gspread.service_account_from_dict(
     st.secrets["gcp_service_account"])
-    sh = gc.open("Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027")
+    sh = gc.open("Finale - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027")
     return sh.worksheet("ISCRIZIONI")
 
 ws = connect_to_gsheet()
