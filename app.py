@@ -71,7 +71,6 @@ teachers = sorted(df["Insegnanti"].dropna().unique())
 teacher = st.selectbox("Seleziona insegnante", teachers)
 
 df_teacher = df[df["Insegnanti"] == teacher].copy()
-df_teacher = df_teacher[df_teacher["Escluso"] == "No"]
 
 df_teacher["_num"] = pd.to_numeric(
     df_teacher["Numero di iscrizione"],
