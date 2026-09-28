@@ -36,6 +36,8 @@ EXCEL_TO_PILL = {
     "x": "Presente",
 }
 
+OFFERTE_OPTIONS = ["-", "5", "10"]
+
 # ---------------------------
 # GOOGLE SHEETS CONNECTION
 # ---------------------------
@@ -180,6 +182,7 @@ if lezione_oggi:
 
     with st.form("presenze_form"):
         presenze = {}
+        offerte = {}
 
         for _, row in df_teacher.iterrows():
             sheet_row = int(row["_row"])
@@ -187,6 +190,19 @@ if lezione_oggi:
 
             # Statistiche riferite alle lezioni precedenti a oggi.
             show_student_stats(row, today_col)
+
+            offerta_attuale = str(row.get("Offerte", "-")).strip()
+            if offerta_attuale not in OFFERTE_OPTIONS:
+                offerta_attuale = "-"
+
+            offerta = st.selectbox(
+                "Offerte",
+                options=OFFERTE_OPTIONS,
+                index=OFFERTE_OPTIONS.index(offerta_attuale),
+                key=f"offerta_{sheet_row}",
+                label_visibility="visible"
+            )
+            offerte[sheet_row] = offerta
 
             excel_value = str(row[today_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
@@ -212,6 +228,7 @@ elif lezione_ieri:
 
     with st.form("presenze_form"):
         presenze = {}
+        offerte = {}
 
         for _, row in df_teacher.iterrows():
             sheet_row = int(row["_row"])
@@ -219,6 +236,19 @@ elif lezione_ieri:
 
             # Statistiche riferite alle lezioni precedenti a ieri.
             show_student_stats(row, yest_col)
+
+            offerta_attuale = str(row.get("Offerte", "-")).strip()
+            if offerta_attuale not in OFFERTE_OPTIONS:
+                offerta_attuale = "-"
+
+            offerta = st.selectbox(
+                "Offerte",
+                options=OFFERTE_OPTIONS,
+                index=OFFERTE_OPTIONS.index(offerta_attuale),
+                key=f"offerta_{sheet_row}",
+                label_visibility="visible"
+            )
+            offerte[sheet_row] = offerta
 
             excel_value = str(row[yest_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
@@ -400,6 +430,7 @@ if st.button("🖨️ Stampa registro"):
 # ---------------------------
 if submitted and lezione_oggi:
     col_index = df.columns.get_loc(today_col) + 1
+    offerte_col_index = df.columns.get_loc("Offerte") + 1
     updates = []
 
     for sheet_row, value in presenze.items():
@@ -408,6 +439,12 @@ if submitted and lezione_oggi:
             "values": [[value]]
         })
 
+    for sheet_row, value in offerte.items():
+        updates.append({
+            "range": gspread.utils.rowcol_to_a1(sheet_row, offerte_col_index),
+            "values": [[value]]
+        })
+
     ws.batch_update(updates)
 
-    st.success("Presenze salvate correttamente ✅")
+    st.success("Presenze e offerte salvate correttamente ✅")
