@@ -188,8 +188,10 @@ if lezione_oggi:
             sheet_row = int(row["_row"])
             key = f"pres_{sheet_row}"
 
-            # Statistiche riferite alle lezioni precedenti a oggi.
-            show_student_stats(row, today_col)
+            # Nome e cognome dello studente
+            st.markdown(
+                f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
+            )
 
             offerta_attuale = str(row.get("Offerte", "-")).strip()
             if offerta_attuale not in OFFERTE_OPTIONS:
@@ -204,11 +206,14 @@ if lezione_oggi:
             )
             offerte[sheet_row] = offerta
 
+            # Statistiche riferite alle lezioni precedenti a oggi.
+            show_student_stats(row, today_col)
+
             excel_value = str(row[today_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
 
             selected = st.pills(
-                f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
+                "Presenza",
                 options=["Assente", "Assente giustificato", "Presente"],
                 selection_mode="single",
                 default=default_pill,
@@ -234,8 +239,10 @@ elif lezione_ieri:
             sheet_row = int(row["_row"])
             key = f"pres_{sheet_row}"
 
-            # Statistiche riferite alle lezioni precedenti a ieri.
-            show_student_stats(row, yest_col)
+            # Nome e cognome dello studente
+            st.markdown(
+                f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
+            )
 
             offerta_attuale = str(row.get("Offerte", "-")).strip()
             if offerta_attuale not in OFFERTE_OPTIONS:
@@ -250,11 +257,14 @@ elif lezione_ieri:
             )
             offerte[sheet_row] = offerta
 
+            # Statistiche riferite alle lezioni precedenti a ieri.
+            show_student_stats(row, yest_col)
+
             excel_value = str(row[yest_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
 
             selected = st.pills(
-                f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
+                "Presenza",
                 options=["Assente", "Assente giustificato", "Presente"],
                 selection_mode="single",
                 default=default_pill,
