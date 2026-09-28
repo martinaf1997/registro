@@ -177,8 +177,16 @@ def show_student_stats(row, reference_col):
 # ---------------------------
 submitted = False
 
+# Colonna su cui si registrano le presenze: oggi se c'è lezione, altrimenti ieri.
 if lezione_oggi:
-    st.markdown(f"### Presenze del {today_col}")
+    active_col = today_col
+elif lezione_ieri:
+    active_col = yest_col
+else:
+    active_col = None
+
+if active_col:
+    st.markdown(f"### Presenze del {active_col}")
 
     with st.form("presenze_form"):
         presenze = {}
@@ -186,30 +194,36 @@ if lezione_oggi:
 
         for _, row in df_teacher.iterrows():
             sheet_row = int(row["_row"])
-            key = f"pres_{sheet_row}"
 
             # Nome e cognome dello studente
             st.markdown(
                 f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
             )
 
+            # Offerte (pills)
             offerta_attuale = str(row.get("Offerte", "-")).strip()
             if offerta_attuale not in OFFERTE_OPTIONS:
                 offerta_attuale = "-"
 
-            offerta = st.selectbox(
+            offerta = st.pills(
                 "Offerte",
                 options=OFFERTE_OPTIONS,
-                index=OFFERTE_OPTIONS.index(offerta_attuale),
-                key=f"offerta_{sheet_row}",
-                label_visibility="visible"
+                selection_mode="single",
+                default=offerta_attuale,
+                key=f"offerta_{sheet_row}"
             )
+
+            # Se l'utente deseleziona la pill, torna a "-"
+            if offerta is None:
+                offerta = "-"
+
             offerte[sheet_row] = offerta
 
-            # Statistiche riferite alle lezioni precedenti a oggi.
-            show_student_stats(row, today_col)
+            # Statistiche riferite alle lezioni precedenti a quella attiva.
+            show_student_stats(row, active_col)
 
-            excel_value = str(row[today_col]).strip().lower()
+            # Presenza (pills)
+            excel_value = str(row[active_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
 
             selected = st.pills(
@@ -217,60 +231,10 @@ if lezione_oggi:
                 options=["Assente", "Assente giustificato", "Presente"],
                 selection_mode="single",
                 default=default_pill,
-                key=key
+                key=f"pres_{sheet_row}"
             )
 
             # Sicurezza nel caso nessuna pill risulti selezionata.
-            if selected is None:
-                selected = "Assente"
-
-            presenze[sheet_row] = PILL_TO_EXCEL[selected]
-
-        submitted = st.form_submit_button("💾 Salva presenze")
-
-elif lezione_ieri:
-    st.markdown(f"### Presenze del {yest_col}")
-
-    with st.form("presenze_form"):
-        presenze = {}
-        offerte = {}
-
-        for _, row in df_teacher.iterrows():
-            sheet_row = int(row["_row"])
-            key = f"pres_{sheet_row}"
-
-            # Nome e cognome dello studente
-            st.markdown(
-                f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
-            )
-
-            offerta_attuale = str(row.get("Offerte", "-")).strip()
-            if offerta_attuale not in OFFERTE_OPTIONS:
-                offerta_attuale = "-"
-
-            offerta = st.selectbox(
-                "Offerte",
-                options=OFFERTE_OPTIONS,
-                index=OFFERTE_OPTIONS.index(offerta_attuale),
-                key=f"offerta_{sheet_row}",
-                label_visibility="visible"
-            )
-            offerte[sheet_row] = offerta
-
-            # Statistiche riferite alle lezioni precedenti a ieri.
-            show_student_stats(row, yest_col)
-
-            excel_value = str(row[yest_col]).strip().lower()
-            default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
-
-            selected = st.pills(
-                "Presenza",
-                options=["Assente", "Assente giustificato", "Presente"],
-                selection_mode="single",
-                default=default_pill,
-                key=key
-            )
-
             if selected is None:
                 selected = "Assente"
 
@@ -438,8 +402,8 @@ if st.button("🖨️ Stampa registro"):
 # ---------------------------
 # WRITE BACK
 # ---------------------------
-if submitted and lezione_oggi:
-    col_index = df.columns.get_loc(today_col) + 1
+if submitted and active_col:
+    col_index = df.columns.get_loc(active_col) + 1
     offerte_col_index = df.columns.get_loc("Offerte") + 1
     updates = []
 
