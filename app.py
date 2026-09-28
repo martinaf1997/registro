@@ -18,14 +18,18 @@ WORKSHEET_NAME = "ISCRIZIONI"
 
 st.set_page_config(page_title="Presenze corso", layout="wide")
 
+# ---------------------------
 # UI -> Excel
+# ---------------------------
 PILL_TO_EXCEL = {
     "Assente": "",
     "Assente giustificato": "a",
     "Presente": "x",
 }
 
+# ---------------------------
 # Excel -> UI
+# ---------------------------
 EXCEL_TO_PILL = {
     "": "Assente",
     "a": "Assente giustificato",
@@ -38,9 +42,11 @@ EXCEL_TO_PILL = {
 @st.cache_resource
 def connect_to_gsheet():
     gc = gspread.service_account_from_dict(
-    st.secrets["gcp_service_account"])
-    sh = gc.open("Finale - Iscrizione corso di italiano per adulti - Associazione Paroikia odv anno 2026-2027")
-    return sh.worksheet("ISCRIZIONI")
+        st.secrets["gcp_service_account"]
+    )
+    sh = gc.open(SHEET_NAME)
+    return sh.worksheet(WORKSHEET_NAME)
+
 
 ws = connect_to_gsheet()
 
@@ -52,14 +58,23 @@ df = pd.DataFrame(data)
 df["_row"] = range(2, len(df) + 2)
 
 # ---------------------------
-# DATE COLUMN
+# DATE COLUMNS
 # ---------------------------
+date_pattern = re.compile(r"\d{2}/\d{2}")
+date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
+
+# Ordina cronologicamente le date.
+# Le date sono senza anno, quindi vengono ordinate usando un anno fittizio.
+date_cols_sorted = sorted(
+    date_cols,
+    key=lambda x: datetime.strptime(x, "%d/%m")
+)
+
 today_col = datetime.today().strftime("%d/%m")
 yest_col = (datetime.today() - timedelta(days=1)).strftime("%d/%m")
 
 lezione_oggi = today_col in df.columns
 lezione_ieri = yest_col in df.columns
-
 
 if not (lezione_oggi or lezione_ieri):
     st.warning("⚠️ Oggi non c'è lezione: puoi solo stampare il registro")
@@ -79,29 +94,103 @@ df_teacher["_num"] = pd.to_numeric(
 
 df_teacher = df_teacher.sort_values("_num")
 
-if lezione_oggi:
-    st.markdown(f"### Presenze del {today_col}")
-elif lezione_ieri:
-    st.markdown(f"### Presenze del {yest_col}")
-else:
-    st.markdown("### Presenze non disponibili oggi")
+# ---------------------------
+# ATTENDANCE STATISTICS
+# ---------------------------
+def get_student_stats(row, reference_col):
+    """
+    Calcola le statistiche dello studente fino alla lezione precedente
+    rispetto a reference_col.
+
+    x = presente
+    a = assente giustificato
+    vuoto = assente
+    """
+
+    if reference_col in date_cols_sorted:
+        reference_index = date_cols_sorted.index(reference_col)
+        past_dates = date_cols_sorted[:reference_index]
+    else:
+        # Se non c'è una lezione corrente, usa tutte le date fino a ieri.
+        reference_dt = datetime.strptime(reference_col, "%d/%m")
+        past_dates = [
+            d for d in date_cols_sorted
+            if datetime.strptime(d, "%d/%m") < reference_dt
+        ]
+
+    # Solo lezioni effettivamente già trascorse.
+    values = []
+    for col in past_dates:
+        value = str(row.get(col, "")).strip().lower()
+        if value not in ("x", "a", ""):
+            value = ""
+        values.append((col, value))
+
+    lezioni_svolte = len(values)
+    presenze = sum(value == "x" for _, value in values)
+    giustificate = sum(value == "a" for _, value in values)
+    assenze = sum(value == "" for _, value in values)
+
+    ultima_presenza = None
+    for col, value in reversed(values):
+        if value == "x":
+            ultima_presenza = col
+            break
+
+    percentuale = (
+        round((presenze / lezioni_svolte) * 100)
+        if lezioni_svolte > 0
+        else 0
+    )
+
+    return {
+        "lezioni_svolte": lezioni_svolte,
+        "presenze": presenze,
+        "giustificate": giustificate,
+        "assenze": assenze,
+        "percentuale": percentuale,
+        "ultima_presenza": ultima_presenza,
+    }
+
+
+def show_student_stats(row, reference_col):
+    stats = get_student_stats(row, reference_col)
+
+    if stats["lezioni_svolte"] == 0:
+        st.caption("Nessuna lezione precedente registrata")
+        return
+
+    ultima = stats["ultima_presenza"] or "mai"
+
+    st.caption(
+        f"📊 {stats['presenze']} presenze / {stats['lezioni_svolte']} lezioni"
+        f"  ·  {stats['percentuale']}%"
+        f"  ·  Ultima presenza: {ultima}"
+        f"  ·  {stats['giustificate']} giustificate"
+    )
+
 
 # ---------------------------
 # FORM
 # ---------------------------
 submitted = False
+
 if lezione_oggi:
+    st.markdown(f"### Presenze del {today_col}")
 
     with st.form("presenze_form"):
         presenze = {}
-    
+
         for _, row in df_teacher.iterrows():
-            sheet_row = row["_row"]
+            sheet_row = int(row["_row"])
             key = f"pres_{sheet_row}"
-    
+
+            # Statistiche riferite alle lezioni precedenti a oggi.
+            show_student_stats(row, today_col)
+
             excel_value = str(row[today_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
-    
+
             selected = st.pills(
                 f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
                 options=["Assente", "Assente giustificato", "Presente"],
@@ -109,23 +198,31 @@ if lezione_oggi:
                 default=default_pill,
                 key=key
             )
-    
+
+            # Sicurezza nel caso nessuna pill risulti selezionata.
+            if selected is None:
+                selected = "Assente"
+
             presenze[sheet_row] = PILL_TO_EXCEL[selected]
-    
+
         submitted = st.form_submit_button("💾 Salva presenze")
 
 elif lezione_ieri:
+    st.markdown(f"### Presenze del {yest_col}")
 
     with st.form("presenze_form"):
         presenze = {}
-    
+
         for _, row in df_teacher.iterrows():
-            sheet_row = row["_row"]
+            sheet_row = int(row["_row"])
             key = f"pres_{sheet_row}"
-    
+
+            # Statistiche riferite alle lezioni precedenti a ieri.
+            show_student_stats(row, yest_col)
+
             excel_value = str(row[yest_col]).strip().lower()
             default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
-    
+
             selected = st.pills(
                 f"{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}",
                 options=["Assente", "Assente giustificato", "Presente"],
@@ -133,15 +230,21 @@ elif lezione_ieri:
                 default=default_pill,
                 key=key
             )
-    
+
+            if selected is None:
+                selected = "Assente"
+
             presenze[sheet_row] = PILL_TO_EXCEL[selected]
-    
+
         submitted = st.form_submit_button("💾 Salva presenze")
 
-# ---------------------------
-# REGISTRO CARTACEO    
-# ---------------------------
+else:
+    st.markdown("### Presenze non disponibili oggi")
 
+
+# ---------------------------
+# REGISTRO CARTACEO
+# ---------------------------
 st.markdown("---")
 st.subheader("Registro cartaceo")
 
@@ -151,48 +254,61 @@ if st.button("🖨️ Stampa registro"):
     styleN = styles["Normal"]
     styleN.fontSize = 7
     styleN.leading = 7
-    
+
     # ---------------------------
     # IDENTIFICA COLONNE DATA
     # ---------------------------
-    
+
     date_pattern = re.compile(r"\d{2}/\d{2}")
-    date_cols = [col for col in df.columns if date_pattern.fullmatch(col)]
-    
-    # Ordina le date (importante!)
-    date_cols_sorted = sorted(date_cols, key=lambda x: datetime.strptime(x, "%d/%m"))
-    
+    date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
+
+    # Ordina le date
+    date_cols_sorted = sorted(
+        date_cols,
+        key=lambda x: datetime.strptime(x, "%d/%m")
+    )
+
     today_dt = datetime.strptime(today_col, "%d/%m")
-    
+
     # Se today_col non esiste nel foglio, cerca l'ultima data di lezione ≤ oggi
     if today_col in date_cols_sorted:
         last_filled_index = date_cols_sorted.index(today_col)
     else:
-        past_dates = [d for d in date_cols_sorted if datetime.strptime(d, "%d/%m") <= today_dt]
+        past_dates = [
+            d for d in date_cols_sorted
+            if datetime.strptime(d, "%d/%m") <= today_dt
+        ]
+
         if not past_dates:
             st.warning("Nessuna data di lezione trovata nel registro.")
             st.stop()
+
         last_filled_index = date_cols_sorted.index(past_dates[-1])
-    
+
     # Selezione numero giorni
     n_gg = 15
-    try: selected_dates = date_cols_sorted[last_filled_index:last_filled_index + n_gg]
-    except: selected_dates = date_cols_sorted[last_filled_index:]
-    
+
+    try:
+        selected_dates = date_cols_sorted[
+            last_filled_index:last_filled_index + n_gg
+        ]
+    except Exception:
+        selected_dates = date_cols_sorted[last_filled_index:]
+
     # ---------------------------
     # COSTRUZIONE TABELLA
     # ---------------------------
     header = ["N°", "Cognome", "Nome"] + selected_dates
-    
+
     table_data = [header]
-    
+
     for _, row in df_teacher.iterrows():
         row_data = [
             Paragraph(str(row["Numero di iscrizione"]), styleN),
             Paragraph(str(row["Cognome"]), styleN),
             Paragraph(str(row["Nome"]), styleN),
         ]
-        
+
         for i, col in enumerate(selected_dates):
             if i == 0:
                 # Prima colonna = ultima lezione compilata → mostra dati reali
@@ -201,14 +317,14 @@ if st.button("🖨️ Stampa registro"):
             else:
                 # Future → vuote
                 row_data.append("")
-    
+
         table_data.append(row_data)
-    
+
     # ---------------------------
     # CREA PDF
     # ---------------------------
     buffer = BytesIO()
-    
+
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A4),
@@ -221,16 +337,33 @@ if st.button("🖨️ Stampa registro"):
     def header(canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica-Bold", 8)
+
         # Nome insegnante in alto a sinistra
-        canvas.drawString(10, landscape(A4)[1] - 20, f"Classe: {teacher}")
+        canvas.drawString(
+            10,
+            landscape(A4)[1] - 20,
+            f"Classe: {teacher}"
+        )
+
         # Data di stampa in alto a destra
         data_stampa = datetime.today().strftime("%d/%m/%Y")
-        canvas.drawRightString(landscape(A4)[0] - 10, landscape(A4)[1] - 20, f"Stampato il: {data_stampa}")
+
+        canvas.drawRightString(
+            landscape(A4)[0] - 10,
+            landscape(A4)[1] - 20,
+            f"Stampato il: {data_stampa}"
+        )
+
         canvas.restoreState()
-    
+
     col_widths = [40, 95, 95] + [25] * len(selected_dates)
-    table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    
+
+    table = Table(
+        table_data,
+        colWidths=col_widths,
+        repeatRows=1
+    )
+
     style = TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
         ("BACKGROUND", (0, 0), (-1, 0), colors.yellow),
@@ -238,14 +371,19 @@ if st.button("🖨️ Stampa registro"):
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("FONTSIZE", (0, 0), (-1, -1), 7),
     ])
-    
+
     table.setStyle(style)
-    
+
     elements = [table]
-    doc.build(elements, onFirstPage=header, onLaterPages=header)
-    
+
+    doc.build(
+        elements,
+        onFirstPage=header,
+        onLaterPages=header
+    )
+
     buffer.seek(0)
-    
+
     # ---------------------------
     # DOWNLOAD
     # ---------------------------
@@ -255,12 +393,13 @@ if st.button("🖨️ Stampa registro"):
         file_name=f"registro_{teacher}.pdf",
         mime="application/pdf"
     )
-    
+
+
 # ---------------------------
 # WRITE BACK
 # ---------------------------
 if submitted and lezione_oggi:
-    col_index = df.columns.get_loc(today_col) + 1  # +1 per Google Sheets
+    col_index = df.columns.get_loc(today_col) + 1
     updates = []
 
     for sheet_row, value in presenze.items():
@@ -270,4 +409,5 @@ if submitted and lezione_oggi:
         })
 
     ws.batch_update(updates)
+
     st.success("Presenze salvate correttamente ✅")
