@@ -195,50 +195,46 @@ if active_col:
         for _, row in df_teacher.iterrows():
             sheet_row = int(row["_row"])
 
-            # Nome e cognome dello studente
-            st.markdown(
-                f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
-            )
+            # Riquadro per separare visivamente gli studenti.
+            with st.container(border=True):
+                st.markdown(
+                    f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
+                )
 
-            # Offerte (pills)
-            offerta_attuale = str(row.get("Offerte", "-")).strip()
-            if offerta_attuale not in OFFERTE_OPTIONS:
-                offerta_attuale = "-"
+                # Se Offerte è già 5 o 10, non mostrare il controllo.
+                offerta_attuale = str(row.get("Offerte", "-")).strip()
+                if not offerta_attuale or offerta_attuale.lower() == "nan":
+                    offerta_attuale = "-"
 
-            offerta = st.pills(
-                "Offerte",
-                options=OFFERTE_OPTIONS,
-                selection_mode="single",
-                default=offerta_attuale,
-                key=f"offerta_{sheet_row}"
-            )
+                if offerta_attuale == "-":
+                    offerta = st.pills(
+                        "Offerte",
+                        options=OFFERTE_OPTIONS,
+                        selection_mode="single",
+                        default="-",
+                        key=f"offerta_{sheet_row}",
+                    )
+                    if offerta is None:
+                        offerta = "-"
+                    offerte[sheet_row] = offerta
 
-            # Se l'utente deseleziona la pill, torna a "-"
-            if offerta is None:
-                offerta = "-"
+                show_student_stats(row, active_col)
 
-            offerte[sheet_row] = offerta
+                excel_value = str(row[active_col]).strip().lower()
+                default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
 
-            # Statistiche riferite alle lezioni precedenti a quella attiva.
-            show_student_stats(row, active_col)
+                selected = st.pills(
+                    "Presenza",
+                    options=["Assente", "Assente giustificato", "Presente"],
+                    selection_mode="single",
+                    default=default_pill,
+                    key=f"pres_{sheet_row}"
+                )
 
-            # Presenza (pills)
-            excel_value = str(row[active_col]).strip().lower()
-            default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
+                if selected is None:
+                    selected = "Assente"
 
-            selected = st.pills(
-                "Presenza",
-                options=["Assente", "Assente giustificato", "Presente"],
-                selection_mode="single",
-                default=default_pill,
-                key=f"pres_{sheet_row}"
-            )
-
-            # Sicurezza nel caso nessuna pill risulti selezionata.
-            if selected is None:
-                selected = "Assente"
-
-            presenze[sheet_row] = PILL_TO_EXCEL[selected]
+                presenze[sheet_row] = PILL_TO_EXCEL[selected]
 
         submitted = st.form_submit_button("💾 Salva presenze")
 
