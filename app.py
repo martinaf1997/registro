@@ -64,13 +64,15 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 date_pattern = re.compile(r"\d{2}/\d{2}")
 date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
-
+'''
 # Ordina cronologicamente le date.
 # Le date sono senza anno, quindi vengono ordinate usando un anno fittizio.
 date_cols_sorted = sorted(
     date_cols,
     key=lambda x: datetime.strptime(x, "%d/%m")
 )
+'''
+
 
 today_col = datetime.today().strftime("%d/%m")
 yest_col = (datetime.today() - timedelta(days=1)).strftime("%d/%m")
@@ -109,15 +111,14 @@ def get_student_stats(row, reference_col):
     vuoto = assente
     """
 
-    if reference_col in date_cols_sorted:
-        reference_index = date_cols_sorted.index(reference_col)
-        past_dates = date_cols_sorted[:reference_index]
-        print(past_dates)
+    if reference_col in date_cols:
+        reference_index = date_cols.index(reference_col)
+        past_dates = date_cols[:reference_index]
     else:
         # Se non c'è una lezione corrente, usa tutte le date fino a ieri.
         reference_dt = datetime.strptime(reference_col, "%d/%m")
         past_dates = [
-            d for d in date_cols_sorted
+            d for d in date_cols
             if datetime.strptime(d, "%d/%m") < reference_dt
         ]
 
@@ -269,24 +270,26 @@ if st.button("🖨️ Stampa registro"):
     # ---------------------------
     # IDENTIFICA COLONNE DATA
     # ---------------------------
-
+    
     date_pattern = re.compile(r"\d{2}/\d{2}")
     date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
 
+    '''
     # Ordina le date
     date_cols_sorted = sorted(
         date_cols,
         key=lambda x: datetime.strptime(x, "%d/%m")
     )
+    '''
 
     today_dt = datetime.strptime(today_col, "%d/%m")
 
     # Se today_col non esiste nel foglio, cerca l'ultima data di lezione ≤ oggi
-    if today_col in date_cols_sorted:
-        last_filled_index = date_cols_sorted.index(today_col)
+    if today_col in date_cols:
+        last_filled_index = date_cols.index(today_col)
     else:
         past_dates = [
-            d for d in date_cols_sorted
+            d for d in date_cols
             if datetime.strptime(d, "%d/%m") <= today_dt
         ]
 
@@ -294,17 +297,17 @@ if st.button("🖨️ Stampa registro"):
             st.warning("Nessuna data di lezione trovata nel registro.")
             st.stop()
 
-        last_filled_index = date_cols_sorted.index(past_dates[-1])
+        last_filled_index = date_cols.index(past_dates[-1])
 
     # Selezione numero giorni
     n_gg = 15
 
     try:
-        selected_dates = date_cols_sorted[
+        selected_dates = date_cols[
             last_filled_index:last_filled_index + n_gg
         ]
     except Exception:
-        selected_dates = date_cols_sorted[last_filled_index:]
+        selected_dates = date_cols[last_filled_index:]
 
     # ---------------------------
     # COSTRUZIONE TABELLA
