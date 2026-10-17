@@ -65,13 +65,6 @@ df["_row"] = range(2, len(df) + 2)
 date_pattern = re.compile(r"\d{2}/\d{2}")
 date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
 
-# Ordina cronologicamente le date.
-# Le date sono senza anno, quindi vengono ordinate usando un anno fittizio.
-date_cols_sorted = sorted(
-    date_cols,
-    key=lambda x: datetime.strptime(x, "%d/%m")
-)
-
 today_col = datetime.today().strftime("%d/%m")
 yest_col = (datetime.today() - timedelta(days=1)).strftime("%d/%m")
 
@@ -109,14 +102,14 @@ def get_student_stats(row, reference_col):
     vuoto = assente
     """
 
-    if reference_col in date_cols_sorted:
-        reference_index = date_cols_sorted.index(reference_col)
-        past_dates = date_cols_sorted[:reference_index]
+    if reference_col in date_cols:
+        reference_index = date_cols.index(reference_col)
+        past_dates = date_cols[:reference_index]
     else:
         # Se non c'è una lezione corrente, usa tutte le date fino a ieri.
         reference_dt = datetime.strptime(reference_col, "%d/%m")
         past_dates = [
-            d for d in date_cols_sorted
+            d for d in date_cols
             if datetime.strptime(d, "%d/%m") < reference_dt
         ]
 
@@ -188,55 +181,65 @@ else:
 if active_col:
     st.markdown(f"### Presenze del {active_col}")
 
-    with st.form("presenze_form"):
-        presenze = {}
-        offerte = {}
+    # Il contatore viene posizionato sopra l'elenco e aggiornato a ogni modifica.
+    total_presenti_placeholder = st.empty()
+    presenze = {}
+    offerte = {}
 
-        for _, row in df_teacher.iterrows():
-            sheet_row = int(row["_row"])
+    for _, row in df_teacher.iterrows():
+        sheet_row = int(row["_row"])
 
-            # Riquadro per separare visivamente gli studenti.
-            with st.container(border=True):
-                st.markdown(
-                    f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
-                )
+        # Riquadro per separare visivamente gli studenti.
+        with st.container(border=True):
+            st.markdown(
+                f"**{row['Numero di iscrizione']} – {row['Cognome']} {row['Nome']}**"
+            )
 
-                # Se Offerte è già 5 o 10, non mostrare il controllo.
-                offerta_attuale = str(row.get("Offerte", "-")).strip()
-                if not offerta_attuale or offerta_attuale.lower() == "nan":
-                    offerta_attuale = "-"
+            # Se Offerte è già valorizzato (5 o 10), non mostrare il controllo.
+            offerta_attuale = str(row.get("Offerte", "-")).strip()
+            if not offerta_attuale or offerta_attuale.lower() == "nan":
+                offerta_attuale = "-"
 
-                if offerta_attuale == "-":
-                    offerta = st.pills(
-                        "Offerte",
-                        options=OFFERTE_OPTIONS,
-                        selection_mode="single",
-                        default="-",
-                        key=f"offerta_{sheet_row}",
-                    )
-                    if offerta is None:
-                        offerta = "-"
-                    offerte[sheet_row] = offerta
-
-                show_student_stats(row, active_col)
-
-                excel_value = str(row[active_col]).strip().lower()
-                default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
-
-                selected = st.pills(
-                    "Presenza",
-                    options=["Assente", "Assente giustificato", "Presente"],
+            if offerta_attuale == "-":
+                offerta = st.pills(
+                    "Offerte",
+                    options=OFFERTE_OPTIONS,
                     selection_mode="single",
-                    default=default_pill,
-                    key=f"pres_{sheet_row}"
+                    default="-",
+                    key=f"offerta_{sheet_row}",
                 )
+                if offerta is None:
+                    offerta = "-"
+                offerte[sheet_row] = offerta
 
-                if selected is None:
-                    selected = "Assente"
+            # Statistiche riferite alle lezioni precedenti a quella attiva.
+            show_student_stats(row, active_col)
 
-                presenze[sheet_row] = PILL_TO_EXCEL[selected]
+            # Presenza (fuori da st.form: così Streamlit aggiorna il contatore subito).
+            excel_value = str(row[active_col]).strip().lower()
+            default_pill = EXCEL_TO_PILL.get(excel_value, "Assente")
 
-        submitted = st.form_submit_button("💾 Salva presenze")
+            selected = st.pills(
+                "Presenza",
+                options=["Assente", "Assente giustificato", "Presente"],
+                selection_mode="single",
+                default=default_pill,
+                key=f"pres_{sheet_row}"
+            )
+
+            if selected is None:
+                selected = default_pill
+
+            presenze[sheet_row] = PILL_TO_EXCEL[selected]
+
+    # Mostra il conteggio in alto, usando le selezioni correnti di questa esecuzione.
+    presenti_ora = sum(value == "x" for value in presenze.values())
+    totale_studenti = len(df_teacher)
+    total_presenti_placeholder.info(
+        f"👥 **Presenti selezionati: {presenti_ora} su {totale_studenti} studenti**"
+    )
+
+    submitted = st.button("💾 Salva presenze")
 
 else:
     st.markdown("### Presenze non disponibili oggi")
@@ -258,24 +261,18 @@ if st.button("🖨️ Stampa registro"):
     # ---------------------------
     # IDENTIFICA COLONNE DATA
     # ---------------------------
-
+    
     date_pattern = re.compile(r"\d{2}/\d{2}")
     date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
-
-    # Ordina le date
-    date_cols_sorted = sorted(
-        date_cols,
-        key=lambda x: datetime.strptime(x, "%d/%m")
-    )
 
     today_dt = datetime.strptime(today_col, "%d/%m")
 
     # Se today_col non esiste nel foglio, cerca l'ultima data di lezione ≤ oggi
-    if today_col in date_cols_sorted:
-        last_filled_index = date_cols_sorted.index(today_col)
+    if today_col in date_cols:
+        last_filled_index = date_cols.index(today_col)
     else:
         past_dates = [
-            d for d in date_cols_sorted
+            d for d in date_cols
             if datetime.strptime(d, "%d/%m") <= today_dt
         ]
 
@@ -283,17 +280,17 @@ if st.button("🖨️ Stampa registro"):
             st.warning("Nessuna data di lezione trovata nel registro.")
             st.stop()
 
-        last_filled_index = date_cols_sorted.index(past_dates[-1])
+        last_filled_index = date_cols.index(past_dates[-1])
 
     # Selezione numero giorni
     n_gg = 15
 
     try:
-        selected_dates = date_cols_sorted[
+        selected_dates = date_cols[
             last_filled_index:last_filled_index + n_gg
         ]
     except Exception:
-        selected_dates = date_cols_sorted[last_filled_index:]
+        selected_dates = date_cols[last_filled_index:]
 
     # ---------------------------
     # COSTRUZIONE TABELLA
