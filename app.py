@@ -64,15 +64,6 @@ df["_row"] = range(2, len(df) + 2)
 # ---------------------------
 date_pattern = re.compile(r"\d{2}/\d{2}")
 date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
-'''
-# Ordina cronologicamente le date.
-# Le date sono senza anno, quindi vengono ordinate usando un anno fittizio.
-date_cols_sorted = sorted(
-    date_cols,
-    key=lambda x: datetime.strptime(x, "%d/%m")
-)
-'''
-
 
 today_col = datetime.today().strftime("%d/%m")
 yest_col = (datetime.today() - timedelta(days=1)).strftime("%d/%m")
@@ -273,14 +264,6 @@ if st.button("🖨️ Stampa registro"):
     
     date_pattern = re.compile(r"\d{2}/\d{2}")
     date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
-
-    '''
-    # Ordina le date
-    date_cols_sorted = sorted(
-        date_cols,
-        key=lambda x: datetime.strptime(x, "%d/%m")
-    )
-    '''
 
     today_dt = datetime.strptime(today_col, "%d/%m")
 
