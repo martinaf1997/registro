@@ -112,6 +112,7 @@ def get_student_stats(row, reference_col):
     if reference_col in date_cols_sorted:
         reference_index = date_cols_sorted.index(reference_col)
         past_dates = date_cols_sorted[:reference_index]
+        print(past_dates)
     else:
         # Se non c'è una lezione corrente, usa tutte le date fino a ieri.
         reference_dt = datetime.strptime(reference_col, "%d/%m")
