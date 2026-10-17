@@ -265,14 +265,20 @@ if st.button("🖨️ Stampa registro"):
     date_pattern = re.compile(r"\d{2}/\d{2}")
     date_cols = [col for col in df.columns if date_pattern.fullmatch(str(col))]
 
+    # Ordina le date
+    date_cols_sorted = sorted(
+        date_cols,
+        key=lambda x: datetime.strptime(x, "%d/%m")
+    )
+
     today_dt = datetime.strptime(today_col, "%d/%m")
 
     # Se today_col non esiste nel foglio, cerca l'ultima data di lezione ≤ oggi
-    if today_col in date_cols:
-        last_filled_index = date_cols.index(today_col)
+    if today_col in date_cols_sorted:
+        last_filled_index = date_cols_sorted.index(today_col)
     else:
         past_dates = [
-            d for d in date_cols
+            d for d in date_cols_sorted
             if datetime.strptime(d, "%d/%m") <= today_dt
         ]
 
@@ -280,17 +286,17 @@ if st.button("🖨️ Stampa registro"):
             st.warning("Nessuna data di lezione trovata nel registro.")
             st.stop()
 
-        last_filled_index = date_cols.index(past_dates[-1])
+        last_filled_index = date_cols_sorted.index(past_dates[-1])
 
     # Selezione numero giorni
     n_gg = 15
 
     try:
-        selected_dates = date_cols[
+        selected_dates = date_cols_sorted[
             last_filled_index:last_filled_index + n_gg
         ]
     except Exception:
-        selected_dates = date_cols[last_filled_index:]
+        selected_dates = date_cols_sorted[last_filled_index:]
 
     # ---------------------------
     # COSTRUZIONE TABELLA
