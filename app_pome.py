@@ -181,8 +181,6 @@ else:
 if active_col:
     st.markdown(f"### Presenze del {active_col}")
 
-    # Il contatore viene posizionato sopra l'elenco e aggiornato a ogni modifica.
-    total_presenti_placeholder = st.empty()
     presenze = {}
     offerte = {}
 
@@ -232,12 +230,11 @@ if active_col:
 
             presenze[sheet_row] = PILL_TO_EXCEL[selected]
 
-    # Mostra il conteggio in alto, usando le selezioni correnti di questa esecuzione.
+    # Riepilogo dei presenti in fondo all'elenco
     presenti_ora = sum(value == "x" for value in presenze.values())
     totale_studenti = len(df_teacher)
-    total_presenti_placeholder.info(
-        f"👥 **Presenti selezionati: {presenti_ora} su {totale_studenti} studenti**"
-    )
+    
+    st.info(f"👥 **Presenti selezionati: {presenti_ora} su {totale_studenti} studenti**")
 
     submitted = st.button("💾 Salva presenze")
 
