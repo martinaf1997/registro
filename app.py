@@ -242,6 +242,134 @@ else:
     st.markdown("### Presenze non disponibili oggi")
 
 
+
+# ---------------------------
+# RIEPILOGO ULTIME 8 LEZIONI
+# ---------------------------
+st.markdown("---")
+st.subheader("Riepilogo presenze")
+
+if "show_last8_pdf" not in st.session_state:
+    st.session_state["show_last8_pdf"] = False
+
+col_show, col_close = st.columns([1, 1])
+with col_show:
+    if st.button("📋 Mostra ultime 8 lezioni", key="show_last8_button"):
+        st.session_state["show_last8_pdf"] = True
+with col_close:
+    if st.session_state["show_last8_pdf"]:
+        if st.button("✖️ Chiudi riepilogo", key="close_last8_button"):
+            st.session_state["show_last8_pdf"] = False
+
+if st.session_state["show_last8_pdf"]:
+    # Ricostruisce le date in ordine cronologico, gestendo dicembre/gennaio.
+    today_dt = datetime.today()
+    ordered_dates = []
+    previous_month = None
+    inferred_year = today_dt.year
+
+    if date_cols:
+        first_month = int(date_cols[0].split("/")[1])
+        if first_month > today_dt.month:
+            inferred_year -= 1
+
+    for date_label in date_cols:
+        day, month = map(int, date_label.split("/"))
+        if previous_month is not None and month < previous_month:
+            inferred_year += 1
+        try:
+            actual_date = datetime(inferred_year, month, day)
+            if actual_date.date() <= today_dt.date():
+                ordered_dates.append((actual_date, date_label))
+        except ValueError:
+            continue
+        previous_month = month
+
+    last8_dates = [label for _, label in ordered_dates[-8:]]
+
+    if not last8_dates:
+        st.info("Non risultano lezioni svolte fino a oggi.")
+    else:
+        pdf_buffer = BytesIO()
+        styles = getSampleStyleSheet()
+        cell_style = styles["Normal"]
+        cell_style.fontSize = 7
+        cell_style.leading = 8
+
+        pdf_data = [[
+            Paragraph("<b>N°</b>", cell_style),
+            Paragraph("<b>Cognome</b>", cell_style),
+            Paragraph("<b>Nome</b>", cell_style),
+        ] + [Paragraph(f"<b>{d}</b>", cell_style) for d in last8_dates]]
+
+        for _, student in df_teacher.iterrows():
+            student_row = [
+                Paragraph(str(student.get("Numero di iscrizione", "")), cell_style),
+                Paragraph(str(student.get("Cognome", "")), cell_style),
+                Paragraph(str(student.get("Nome", "")), cell_style),
+            ]
+            for date_label in last8_dates:
+                value = str(student.get(date_label, "")).strip().lower()
+                student_row.append({"x": "P", "a": "G"}.get(value, "A"))
+            pdf_data.append(student_row)
+
+        page_width, page_height = landscape(A4)
+        left_margin, right_margin = 18, 18
+        usable_width = page_width - left_margin - right_margin
+        fixed_widths = [32, 105, 105]
+        date_width = (usable_width - sum(fixed_widths)) / len(last8_dates)
+        table = Table(
+            pdf_data,
+            colWidths=fixed_widths + [date_width] * len(last8_dates),
+            repeatRows=1
+        )
+        table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+
+        def last8_header(canvas, doc):
+            canvas.saveState()
+            canvas.setFont("Helvetica-Bold", 10)
+            canvas.drawString(
+                left_margin, page_height - 18,
+                f"Presenze - {teacher} - ultime {len(last8_dates)} lezioni"
+            )
+            canvas.setFont("Helvetica", 7)
+            canvas.drawRightString(
+                page_width - right_margin, page_height - 18,
+                "A = Assente   G = Giustificato   P = Presente"
+            )
+            canvas.restoreState()
+
+        pdf_doc = SimpleDocTemplate(
+            pdf_buffer,
+            pagesize=landscape(A4),
+            rightMargin=right_margin,
+            leftMargin=left_margin,
+            topMargin=30,
+            bottomMargin=18
+        )
+        pdf_doc.build([table], onFirstPage=last8_header, onLaterPages=last8_header)
+        pdf_buffer.seek(0)
+
+        import base64
+        pdf_base64 = base64.b64encode(pdf_buffer.getvalue()).decode("utf-8")
+        st.components.v1.html(
+            f'<iframe src="data:application/pdf;base64,{pdf_base64}" '
+            'width="100%" height="650" '
+            'style="border:1px solid #cccccc; border-radius:8px;" '
+            'type="application/pdf"></iframe>',
+            height=670,
+            scrolling=False
+        )
+        st.caption("Legenda: P = Presente · G = Assente giustificato · A = Assente")
+
 # ---------------------------
 # REGISTRO CARTACEO
 # ---------------------------
