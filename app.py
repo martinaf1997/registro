@@ -314,7 +314,7 @@ if st.session_state["show_last8_image"]:
         draw = ImageDraw.Draw(image)
 
         try:
-            font = ImageFont.truetype("DejaVuSans.ttf", 17)
+            font = ImageFont.truetype("DejaVuSans.ttf", 27)
             bold_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 18)
             title_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 23)
         except OSError:
