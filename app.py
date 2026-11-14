@@ -249,20 +249,22 @@ else:
 st.markdown("---")
 st.subheader("Riepilogo presenze")
 
-if "show_last8_pdf" not in st.session_state:
-    st.session_state["show_last8_pdf"] = False
+if "show_last8_image" not in st.session_state:
+    st.session_state["show_last8_image"] = False
 
 col_show, col_close = st.columns([1, 1])
 with col_show:
     if st.button("📋 Mostra ultime 8 lezioni", key="show_last8_button"):
-        st.session_state["show_last8_pdf"] = True
-with col_close:
-    if st.session_state["show_last8_pdf"]:
-        if st.button("✖️ Chiudi riepilogo", key="close_last8_button"):
-            st.session_state["show_last8_pdf"] = False
+        st.session_state["show_last8_image"] = True
 
-if st.session_state["show_last8_pdf"]:
-    # Ricostruisce le date in ordine cronologico, gestendo dicembre/gennaio.
+with col_close:
+    if st.session_state["show_last8_image"]:
+        if st.button("✖️ Chiudi riepilogo", key="close_last8_button"):
+            st.session_state["show_last8_image"] = False
+
+if st.session_state["show_last8_image"]:
+    # Le colonne data sono già nell'ordine del foglio. Ricostruisce
+    # l'anno delle date gestendo il passaggio dicembre/gennaio.
     today_dt = datetime.today()
     ordered_dates = []
     previous_month = None
@@ -279,10 +281,12 @@ if st.session_state["show_last8_pdf"]:
             inferred_year += 1
         try:
             actual_date = datetime(inferred_year, month, day)
-            if actual_date.date() <= today_dt.date():
-                ordered_dates.append((actual_date, date_label))
         except ValueError:
+            previous_month = month
             continue
+
+        if actual_date.date() <= today_dt.date():
+            ordered_dates.append((actual_date, date_label))
         previous_month = month
 
     last8_dates = [label for _, label in ordered_dates[-8:]]
@@ -290,85 +294,96 @@ if st.session_state["show_last8_pdf"]:
     if not last8_dates:
         st.info("Non risultano lezioni svolte fino a oggi.")
     else:
-        pdf_buffer = BytesIO()
-        styles = getSampleStyleSheet()
-        cell_style = styles["Normal"]
-        cell_style.fontSize = 7
-        cell_style.leading = 8
+        # Crea una vera immagine PNG mostrata direttamente nella pagina.
+        # In questo modo Chrome non deve aprire un PDF dentro un iframe.
+        from PIL import Image, ImageDraw, ImageFont
 
-        pdf_data = [[
-            Paragraph("<b>N°</b>", cell_style),
-            Paragraph("<b>Cognome</b>", cell_style),
-            Paragraph("<b>Nome</b>", cell_style),
-        ] + [Paragraph(f"<b>{d}</b>", cell_style) for d in last8_dates]]
+        students = list(df_teacher.iterrows())
+        margin = 30
+        row_height = 42
+        number_width = 65
+        surname_width = 190
+        name_width = 190
+        date_width = 82
+        column_widths = [number_width, surname_width, name_width] + [date_width] * len(last8_dates)
 
-        for _, student in df_teacher.iterrows():
-            student_row = [
-                Paragraph(str(student.get("Numero di iscrizione", "")), cell_style),
-                Paragraph(str(student.get("Cognome", "")), cell_style),
-                Paragraph(str(student.get("Nome", "")), cell_style),
+        image_width = margin * 2 + sum(column_widths)
+        image_height = margin * 2 + 75 + row_height * (len(students) + 1)
+
+        image = Image.new("RGB", (image_width, image_height), "white")
+        draw = ImageDraw.Draw(image)
+
+        try:
+            font = ImageFont.truetype("DejaVuSans.ttf", 17)
+            bold_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 18)
+            title_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 23)
+        except OSError:
+            font = ImageFont.load_default()
+            bold_font = font
+            title_font = font
+
+        draw.text(
+            (margin, margin),
+            f"Presenze - {teacher} - ultime {len(last8_dates)} lezioni",
+            fill="black",
+            font=title_font
+        )
+
+        table_top = margin + 65
+        x_positions = [margin]
+        for width in column_widths:
+            x_positions.append(x_positions[-1] + width)
+
+        headers = ["N°", "Cognome", "Nome"] + last8_dates
+
+        for col_index, header_text in enumerate(headers):
+            x1 = x_positions[col_index]
+            x2 = x_positions[col_index + 1]
+            draw.rectangle(
+                [x1, table_top, x2, table_top + row_height],
+                fill="#e8e8e8",
+                outline="black",
+                width=2
+            )
+            bbox = draw.textbbox((0, 0), str(header_text), font=bold_font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            tx = x1 + max(5, (x2 - x1 - text_width) / 2)
+            ty = table_top + (row_height - text_height) / 2 - 2
+            draw.text((tx, ty), str(header_text), fill="black", font=bold_font)
+
+        for row_index, (_, student) in enumerate(students):
+            y1 = table_top + row_height * (row_index + 1)
+            y2 = y1 + row_height
+            values = [
+                str(student.get("Numero di iscrizione", "")),
+                str(student.get("Cognome", "")),
+                str(student.get("Nome", ""))
             ]
+
+            # x = presente; a = giustificato; cella vuota = assente.
             for date_label in last8_dates:
                 value = str(student.get(date_label, "")).strip().lower()
-                student_row.append({"x": "P", "a": "G"}.get(value, "A"))
-            pdf_data.append(student_row)
+                values.append("x" if value == "x" else "a" if value == "a" else "")
 
-        page_width, page_height = landscape(A4)
-        left_margin, right_margin = 18, 18
-        usable_width = page_width - left_margin - right_margin
-        fixed_widths = [32, 105, 105]
-        date_width = (usable_width - sum(fixed_widths)) / len(last8_dates)
-        table = Table(
-            pdf_data,
-            colWidths=fixed_widths + [date_width] * len(last8_dates),
-            repeatRows=1
-        )
-        table.setStyle(TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
+            for col_index, cell_value in enumerate(values):
+                x1 = x_positions[col_index]
+                x2 = x_positions[col_index + 1]
+                draw.rectangle([x1, y1, x2, y2], outline="black", width=1)
 
-        def last8_header(canvas, doc):
-            canvas.saveState()
-            canvas.setFont("Helvetica-Bold", 10)
-            canvas.drawString(
-                left_margin, page_height - 18,
-                f"Presenze - {teacher} - ultime {len(last8_dates)} lezioni"
-            )
-            canvas.setFont("Helvetica", 7)
-            canvas.drawRightString(
-                page_width - right_margin, page_height - 18,
-                "A = Assente   G = Giustificato   P = Presente"
-            )
-            canvas.restoreState()
+                bbox = draw.textbbox((0, 0), str(cell_value), font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
 
-        pdf_doc = SimpleDocTemplate(
-            pdf_buffer,
-            pagesize=landscape(A4),
-            rightMargin=right_margin,
-            leftMargin=left_margin,
-            topMargin=30,
-            bottomMargin=18
-        )
-        pdf_doc.build([table], onFirstPage=last8_header, onLaterPages=last8_header)
-        pdf_buffer.seek(0)
+                if col_index < 3:
+                    tx = x1 + 8
+                else:
+                    tx = x1 + (x2 - x1 - text_width) / 2
 
-        import base64
-        pdf_base64 = base64.b64encode(pdf_buffer.getvalue()).decode("utf-8")
-        st.components.v1.html(
-            f'<iframe src="data:application/pdf;base64,{pdf_base64}" '
-            'width="100%" height="650" '
-            'style="border:1px solid #cccccc; border-radius:8px;" '
-            'type="application/pdf"></iframe>',
-            height=670,
-            scrolling=False
-        )
-        st.caption("Legenda: P = Presente · G = Assente giustificato · A = Assente")
+                ty = y1 + (row_height - text_height) / 2 - 2
+                draw.text((tx, ty), str(cell_value), fill="black", font=font)
+
+        st.image(image, caption="x = presente · a = assente giustificato · vuoto = assente", use_container_width=True)
 
 # ---------------------------
 # REGISTRO CARTACEO
